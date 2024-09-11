@@ -1,11 +1,8 @@
-import random
 from typing import *
 from config import *
 import json
 import os
-import time
 from log import *
-from discord.ext import commands
 
  
 # user and user-related classes

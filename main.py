@@ -7,7 +7,6 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import os
 from typing import *
-import time
 
 # loading token
 load_dotenv()
