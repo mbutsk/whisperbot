@@ -3,27 +3,6 @@ from config import *
 import json
 import os
 from log import *
-
- 
-# user and user-related classes
-
-class User:
-    def __init__(self, id:int, data:dict={}):
-        '''
-        Represents a user.
-        '''
-        self.id: int = id
-        
-        self.saved_message: "str | None" = data.get('saved_message', None)
-
-    
-    def to_dict(self) -> dict:
-        '''
-        Converts the class to a dictionary to store in the file.
-        '''
-        return {
-            "saved_message": self.saved_message
-        }
     
 
 class Whisper:
@@ -53,11 +32,11 @@ class Whisper:
 # manager
 
 class Manager:
-    def __init__(self, users_file:str):
+    def __init__(self, data_file:str):
         '''
         API and backend manager.
         '''
-        self.users_file: str = users_file
+        self.data_file: str = data_file
         self.whispers: Dict[int, str] = {}
 
         self.reload()
@@ -68,8 +47,6 @@ class Manager:
         '''
         Rewrites the old database with the new one.
         '''
-        self.users: Dict[int, User] = {}
-
         self.commit()
 
 
@@ -80,9 +57,9 @@ class Manager:
         log('Panic!', 'api', WARNING)
 
         # copying file
-        if os.path.exists(self.users_file):
-            os.rename(self.users_file, self.users_file+'.bak')
-            log(f'Cloned user data file to {self.users_file}.bak', 'api')
+        if os.path.exists(self.data_file):
+            os.rename(self.data_file, self.data_file+'.bak')
+            log(f'Cloned user data file to {self.data_file}.bak', 'api')
 
         # creating a new one
         self.new()
@@ -94,14 +71,13 @@ class Manager:
         '''
         # user data
         try:
-            with open(self.users_file, encoding='utf-8') as f:
+            with open(self.data_file, encoding='utf-8') as f:
                 data = json.load(f)
         except:
             self.panic()
             return
 
-        self.users = {int(id): User(int(id), data) for id, data in data['users'].items()}
-        self.whispers = {int(id): Whisper(int(id), data) for id, data in data['whispers'].items()}
+        self.whispers = {int(id): Whisper(int(id), data) for id, data in data.items()}
 
         # saving
         self.commit()
@@ -113,7 +89,7 @@ class Manager:
         '''
         # data
         try:
-            with open(self.users_file, encoding='utf-8') as f:
+            with open(self.data_file, encoding='utf-8') as f:
                 self.data = json.load(f)
         except Exception as e:
             log(f'Failed to load data file: {e}', 'api', ERROR)
@@ -124,42 +100,15 @@ class Manager:
         '''
         Saves user data to the file.
         '''
-        data = {
-            'users': {},
-            'whispers': {}
-        }
-
-        # users
-        for i in self.users:
-            data['users'][i] = self.users[i].to_dict()
+        data = {}
 
         # whispers
         for i in self.whispers:
-            data['whispers'][i] = self.whispers[i].to_dict()
+            data[i] = self.whispers[i].to_dict()
 
         # saving
-        with open(self.users_file, 'w', encoding='utf-8') as f:
+        with open(self.data_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False)
-
-
-    def check_user(self, id:int):
-        '''
-        Checks if user exists in database. If not, creates one.
-        '''
-        if id in self.users:
-            return
-        
-        self.users[id] = User(id)
-
-
-    def get_user(self, id:int) -> User:
-        '''
-        Returns user by ID.
-
-        Automatically checks the user.
-        '''
-        self.check_user(id)
-        return self.users[id]
 
 
     def get_whisper(self, id:int) -> "Whisper | None":
@@ -172,31 +121,9 @@ class Manager:
             return None
         
         return self.whispers[id]
-    
-
-    def save_whisper(self, id:int, text:str):
-        '''
-        Saves a whisper to a user.
-        '''
-        user = self.get_user(id)
-
-        user.saved_message = text
-
-        self.commit()
-    
-
-    def unsave_whisper(self, id:int):
-        '''
-        Removes a saved whisper.
-        '''
-        user = self.get_user(id)
-
-        user.saved_message = None
-
-        self.commit()
 
 
-    def send_whisper(self, message:int, owner:int, viewer:int, text:int, once:bool):
+    def send_whisper(self, message:int, owner:int, viewer:int, text:str, once:bool):
         '''
         Adds a whisper to the database.
         '''
@@ -216,9 +143,7 @@ class Manager:
         '''
         Removes a whisper from the database.
         '''
-        if id not in self.whispers:
-            return
         
-        self.whispers.pop(id)
+        self.whispers.pop(id, None)
 
         self.commit()
