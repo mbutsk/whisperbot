@@ -103,13 +103,13 @@ async def whisper(
     Whispers saved text.
     '''
     
-    # if user.id == inter.user.id:
-    #     embed = discord.Embed(
-    #         color=discord.Color.red(),
-    #         description="**You can't whisper to yourself!**"
-    #     )
-    #     await inter.response.send_message(embed=embed,ephemeral=True)
-    #     return
+    if user.id == inter.user.id:
+        embed = discord.Embed(
+            color=discord.Color.red(),
+            description="**You can't whisper to yourself!**"
+        )
+        await inter.response.send_message(embed=embed,ephemeral=True)
+        return
 
     selfdestruct = 1 if selfdestruct == 'Yes (viewable only once)' else 0
     modal = discord.ui.Modal(
