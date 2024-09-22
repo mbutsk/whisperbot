@@ -13,7 +13,7 @@ load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
 
 bot = commands.Bot(command_prefix=PREFIX, intents=discord.Intents.all(), help_command=None)
-mg = api.Manager(USERS_FILE)
+mg = api.Manager(DATA_FILE)
 
 # connection events
 

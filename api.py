@@ -40,7 +40,6 @@ class Manager:
         self.whispers: Dict[int, str] = {}
 
         self.reload()
-        self.reload_data()
 
 
     def new(self):
@@ -77,38 +76,23 @@ class Manager:
             self.panic()
             return
 
-        self.whispers = {int(id): Whisper(int(id), data) for id, data in data.items()}
+        self.whispers = {int(id): Whisper(int(id), data) for id, data in data['whispers'].items()}
 
         # saving
         self.commit()
-
-
-    def reload_data(self):
-        '''
-        Reloads game data.
-        '''
-        # data
-        try:
-            with open(self.data_file, encoding='utf-8') as f:
-                self.data = json.load(f)
-        except Exception as e:
-            log(f'Failed to load data file: {e}', 'api', ERROR)
-            self.data = {}
 
 
     def commit(self):
         '''
         Saves user data to the file.
         '''
-        data = {}
-
-        # whispers
-        for i in self.whispers:
-            data[i] = self.whispers[i].to_dict()
+        data = {
+            'whispers': {i: self.whispers[i].to_dict() for i in self.whispers}
+        }
 
         # saving
         with open(self.data_file, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False)
+            json.dump(data, f, ensure_ascii=False, indent=4)
 
 
     def get_whisper(self, id:int) -> "Whisper | None":
