@@ -13,7 +13,7 @@ load_dotenv()
 TOKEN = os.getenv('BOT_TOKEN')
 
 bot = commands.Bot(command_prefix=PREFIX, intents=discord.Intents.all(), help_command=None)
-mg = api.Manager(USERS_FILE)
+mg = api.Manager(DATA_FILE)
 
 # connection events
 
@@ -35,10 +35,15 @@ async def on_interaction(inter:discord.Interaction):
     if inter.type == discord.InteractionType.application_command:
         return
     
+    if inter.type == discord.InteractionType.modal_submit:
+        if inter.data['custom_id'].startswith('set-text'):
+            await send_whisper(inter)
+        return
+    
     # answering
     log(f'{inter.user.id} pressed on {inter.id}')
 
-    message_id = int(inter.data['custom_id'])
+    message_id = inter.message.id
     whisper = mg.get_whisper(message_id)
 
     # no whisper
@@ -77,105 +82,6 @@ async def on_interaction(inter:discord.Interaction):
 
 # commands
 
-save_text_cmd = 'save-text:1283547176848326771'
-
-# text_gr = discord.app_commands.Group(
-#     name='text',
-#     description='Manage currently saved text.'
-# )
-
-@bot.tree.command(
-    name='view-text',
-    description='View your currently saved text.'
-)
-@discord.app_commands.user_install()
-async def view_text(
-    inter:discord.Interaction
-):
-    '''
-    Shows your current saved text.
-    '''
-    user = mg.get_user(inter.user.id)
-
-    if user.saved_message == None:
-        embed = discord.Embed(
-            color=discord.Color.red(),
-            description='**No saved text!**\n\n'\
-                f'Use </{save_text_cmd}> to save your text.'
-        )
-    else:
-        embed = discord.Embed(
-            color=discord.Color.blurple(),
-            description="**Saved text:**\n\n"+user.saved_message
-        )
-
-    await inter.response.send_message(embed=embed,ephemeral=True)
-        
-
-
-@bot.tree.command(
-    name='save-text',
-    description='Saves your text to whisper to someone.'
-)
-@discord.app_commands.user_install()
-@discord.app_commands.describe(
-    text='Your text to whisper to someone',
-)
-async def save_text(
-    inter:discord.Interaction,
-    text:str
-):
-    '''
-    Saves text to whisper.
-    '''
-    if len(text) > 1024:
-        embed = discord.Embed(
-            color=discord.Color.red(),
-            description="Your text must not be longer than 1024 characters!"
-        )
-
-    else:
-        mg.save_whisper(inter.user.id, text)
-
-        embed = discord.Embed(
-            color=discord.Color.blurple(),
-            description="**Success!**"
-        )
-
-    await inter.response.send_message(embed=embed,ephemeral=True)
-
-
-
-@bot.tree.command(
-    name='remove-text',
-    description='Remove saved text.'
-)
-@discord.app_commands.user_install()
-async def remove_text(
-    inter:discord.Interaction
-):
-    '''
-    Removes saved text.
-    '''
-    user = mg.get_user(inter.user.id)
-
-    if user.saved_message == None:
-        embed = discord.Embed(
-            color=discord.Color.red(),
-            description="**You don't have any text saved!**"
-        )
-
-    else:
-        mg.unsave_whisper(inter.user.id)
-
-        embed = discord.Embed(
-            color=discord.Color.blurple(),
-            description="**Text removed!**"
-        )
-
-    await inter.response.send_message(embed=embed,ephemeral=True)
-
-
 @bot.tree.command(
     name='whisper',
     description='Whisper saved text to someone.'
@@ -196,7 +102,6 @@ async def whisper(
     '''
     Whispers saved text.
     '''
-    bot_user = mg.get_user(inter.user.id)
     
     if user.id == inter.user.id:
         embed = discord.Embed(
@@ -206,20 +111,29 @@ async def whisper(
         await inter.response.send_message(embed=embed,ephemeral=True)
         return
 
-    if bot_user.saved_message == None:
-        embed = discord.Embed(
-            color=discord.Color.red(),
-            description="**You don't have any text saved!**\n\n"\
-                f'Use </{save_text_cmd}> to save your text and try again.'
+    selfdestruct = 1 if selfdestruct == 'Yes (viewable only once)' else 0
+    modal = discord.ui.Modal(
+        title='Whisper',
+        custom_id=f'set-text:{user.id}:{selfdestruct}'
+    )
+    modal.add_item(
+        discord.ui.TextInput(
+            label='Your text',
+            style=discord.TextStyle.paragraph,
+            max_length=4000 # embed desctiption limit is 4096 but text input limit is 4000
         )
-        await inter.response.send_message(embed=embed,ephemeral=True)
-        return
+    )
+    await inter.response.send_modal(modal)
+    return
         
     # sending
-    selfdestruct = selfdestruct == 'Yes (viewable only once)'
 
+
+# utils?
+async def send_whisper(inter: discord.Interaction):
+    data = inter.data['custom_id'].split(':')[1:]
     embed = discord.Embed(
-        description=f'{inter.user.mention} whispers to {user.mention}...'\
+        description=f'{inter.user.mention} whispers to <@{data[0]}>...'\
             f'\n\nClick on the button to read the whisper.'
     )
 
@@ -236,8 +150,8 @@ async def whisper(
 
     mg.send_whisper(
         original.id, inter.user.id,
-        user.id, bot_user.saved_message,
-        selfdestruct
+        int(data[0]), inter.data['components'][0]['components'][0]['value'],
+        data[1] == '1'
     )
 
     # new view
@@ -245,7 +159,7 @@ async def whisper(
 
     button = discord.ui.Button(
         style=discord.ButtonStyle.blurple,
-        label='Read whisper', custom_id=str(original.id)
+        label='Read whisper'
     )
     view.add_item(button)
 
