@@ -17,9 +17,9 @@ mg = api.Manager(DATA_FILE)
 
 # connection events
 
-# @bot.event
-# async def on_ready():
-#     log(f'Ready as {bot.user.name}!')
+@bot.event
+async def on_ready():
+    log(f'Ready as {bot.user.name}!')
 
     # commands = await bot.tree.sync()
     # log(f'Synced tree with {len(commands)} commands', level=SUCCESS)
@@ -40,8 +40,8 @@ async def on_interaction(inter:discord.Interaction):
             await send_whisper(inter)
         return
     
-    # answering
-    # log(f'{inter.user.id} pressed on {inter.id}')
+    answering
+    log(f'{inter.user.id} pressed on {inter.id}')
 
     message_id = inter.message.id
     whisper = mg.get_whisper(message_id)
