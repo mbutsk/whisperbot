@@ -164,9 +164,12 @@ async def send_whisper(inter: discord.Interaction):
     await inter.edit_original_response(view=view)
 
 @discord.app_commands.describe(
-    message_id='Message id of the whisper'
+    message_id='Message ID of the whisper'
 )
-@bot.tree.command(name='read', description='Read whisper')
+@bot.tree.command(
+        name='read',
+        description='Read whisper'
+)
 async def slash_read_whisper(inter:discord.Interaction, message_id: str):
     whisper = mg.get_whisper(int(message_id))
     if whisper == None:
@@ -185,8 +188,6 @@ async def slash_read_whisper(inter:discord.Interaction, message_id: str):
             description='**You are not meant to view this whisper!**'
             )
     await inter.response.send_message(embed=embed,ephemeral=True) 
-
-    
 
 ## RUNNING BOT
 bot.run(TOKEN)
