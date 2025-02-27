@@ -21,8 +21,8 @@ mg = api.Manager(DATA_FILE)
 async def on_ready():
     log(f'Ready as {bot.user.name}!')
 
-    # commands = await bot.tree.sync()
-    # log(f'Synced tree with {len(commands)} commands', level=SUCCESS)
+    commands = await bot.tree.sync()
+    log(f'Synced tree with {len(commands)} commands', level=SUCCESS)
 
 
 # events
@@ -40,7 +40,6 @@ async def on_interaction(inter:discord.Interaction):
             await send_whisper(inter)
         return
     
-    answering
     log(f'{inter.user.id} pressed on {inter.id}')
 
     message_id = inter.message.id
@@ -81,7 +80,6 @@ async def on_interaction(inter:discord.Interaction):
 
 
 # commands
-
 @bot.tree.command(
     name='whisper',
     description='Whisper saved text to someone.'
@@ -165,6 +163,33 @@ async def send_whisper(inter: discord.Interaction):
 
     await inter.edit_original_response(view=view)
 
+@discord.app_commands.describe(
+    message_id='Discord message id of whisper'
+)
+@bot.tree.command(
+    name='read',
+    description='Read whisper'
+    )
+async def slash_read_whisper(inter:discord.Interaction, message_id: str):
+    whisper = mg.get_whisper(int(message_id))
+    if whisper == None:
+        embed = discord.Embed(
+                color=discord.Color.red(),
+                description="Whisper not found or it expired"
+                )
+    elif inter.user.id in [whisper.owner, whisper.viewer]:
+        embed = discord.Embed(
+                color=discord.Color.blurple(),
+                description=whisper.text
+                )
+    else:
+        embed = discord.Embed(
+            color=discord.Color.red(),
+            description='**You are not meant to view this whisper!**'
+            )
+    await inter.response.send_message(embed=embed,ephemeral=True) 
+
+    
 
 ## RUNNING BOT
 bot.run(TOKEN)
