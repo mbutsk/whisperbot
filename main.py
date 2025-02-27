@@ -21,8 +21,8 @@ mg = api.Manager(DATA_FILE)
 async def on_ready():
     log(f'Ready as {bot.user.name}!')
 
-    commands = await bot.tree.sync()
-    log(f'Synced tree with {len(commands)} commands', level=SUCCESS)
+    # commands = await bot.tree.sync()
+    # log(f'Synced tree with {len(commands)} commands', level=SUCCESS)
 
 
 # events
@@ -164,12 +164,9 @@ async def send_whisper(inter: discord.Interaction):
     await inter.edit_original_response(view=view)
 
 @discord.app_commands.describe(
-    message_id='Discord message id of whisper'
+    message_id='Message id of the whisper'
 )
-@bot.tree.command(
-    name='read',
-    description='Read whisper'
-    )
+@bot.tree.command(name='read', description='Read whisper')
 async def slash_read_whisper(inter:discord.Interaction, message_id: str):
     whisper = mg.get_whisper(int(message_id))
     if whisper == None:
