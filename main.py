@@ -167,26 +167,26 @@ async def send_whisper(inter: discord.Interaction):
     message_id='Message ID of the whisper'
 )
 @bot.tree.command(
-        name='read',
-        description='Read whisper'
+    name='read',
+    description='Read whisper'
 )
 async def slash_read_whisper(inter:discord.Interaction, message_id: str):
     whisper = mg.get_whisper(int(message_id))
     if whisper == None:
         embed = discord.Embed(
-                color=discord.Color.red(),
-                description="Whisper not found or it expired"
-                )
+            color=discord.Color.red(),
+            description="Whisper not found or it expired"
+        )
     elif inter.user.id in [whisper.owner, whisper.viewer]:
         embed = discord.Embed(
-                color=discord.Color.blurple(),
-                description=whisper.text
-                )
+            color=discord.Color.blurple(),
+            description=whisper.text
+        )
     else:
         embed = discord.Embed(
             color=discord.Color.red(),
             description='**You are not meant to view this whisper!**'
-            )
+        )
     await inter.response.send_message(embed=embed,ephemeral=True) 
 
 ## RUNNING BOT
